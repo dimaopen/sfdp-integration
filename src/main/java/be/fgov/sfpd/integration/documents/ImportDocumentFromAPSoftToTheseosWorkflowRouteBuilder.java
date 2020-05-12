@@ -208,9 +208,8 @@ public class ImportDocumentFromAPSoftToTheseosWorkflowRouteBuilder extends Route
 
 			File source = new File(parentDir, baseName + ".pdf");
 			if (source.exists()) {
-				File errorFolder = new File(FilenameUtils.concat(parent, "error"));
-				File pdfFile = new File(errorFolder, source.getName());
-				FileUtils.moveFile(errorFolder, pdfFile);
+				Path dest = Paths.get(parent, "error", source.getName());
+ 				FileUtils.moveFile(source, dest.toFile());
 			}
 		};
 	}
