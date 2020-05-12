@@ -216,7 +216,11 @@ public class ImportDocumentFromAPSoftToTheseosWorkflowRouteBuilder extends Route
 				}
 				Path pdfDes = dest.resolve(source.getFileName());
 				log.info("pdf destination = {}", pdfDes);
-				Files.move(source, pdfDes, StandardCopyOption.REPLACE_EXISTING);
+				try {
+					Files.move(source, pdfDes, StandardCopyOption.REPLACE_EXISTING);
+				} catch (Exception e) {
+					log.error("Error moving pdf file", e);
+				}
 			}
 		};
 	}
