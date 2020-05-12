@@ -2,8 +2,10 @@ package be.fgov.sfpd.integration.documents;
 
 import java.io.*;
 import java.net.ConnectException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 import java.util.Map;
 
@@ -15,7 +17,6 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.cdi.ContextName;
 import org.apache.camel.processor.validation.PredicateValidationException;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
@@ -201,15 +202,21 @@ public class ImportDocumentFromAPSoftToTheseosWorkflowRouteBuilder extends Route
 	private Processor movePdfToErrorFolder() {
 		return (exchange) -> {
 			String parent = (String) exchange.getIn().getHeader(Exchange.FILE_PARENT);
-			File parentDir = new File(parent);
 
-			String filename = (String) exchange.getIn().getHeader(Exchange.FILE_NAME_ONLY);
+			String filename = (String) exchange.getIn().getHeader(Exchange.FILE_PATH);
 			String baseName = FilenameUtils.getBaseName(filename);
 
-			File source = new File(parentDir, baseName + ".pdf");
-			if (source.exists()) {
-				Path dest = Paths.get(parent, "error", source.getName());
- 				FileUtils.moveFile(source, dest.toFile());
+			Path source = Paths.get(parent, baseName + ".pdf");
+			log.info("computed pdf source = {}", source);
+			if (Files.exists(source)) {
+				Path dest = Paths.get(parent, "error");
+				if (!Files.exists(dest)) {
+					log.info("creating dir = {}", dest);
+					Files.createDirectories(dest);
+				}
+				Path pdfDes = dest.resolve(source.getFileName());
+				log.info("pdf destination = {}", pdfDes);
+				Files.move(source, pdfDes, StandardCopyOption.REPLACE_EXISTING);
 			}
 		};
 	}
