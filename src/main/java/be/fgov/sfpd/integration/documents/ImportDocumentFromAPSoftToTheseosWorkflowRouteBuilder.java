@@ -42,13 +42,15 @@ public class ImportDocumentFromAPSoftToTheseosWorkflowRouteBuilder extends Route
 	private static final String WORKFLOW_HREF_URI = "${header.workflow}";
 	private static final String HEADER_UPLOAD_URI = "${header.upload}";
 
-	private static final String CAMEL_DOCUMENTS_INPUT_URI = "{{route.documents.input.uri}}?fileName=${header.file}&move=success";
+	private static final String CAMEL_DOCUMENTS_INPUT_URI = "{{route.documents.input.uri}}?fileName=${header.file}"
+			+ "&readLock=changed&readLockMinAge=10s&readLockTimeout=30000&move=success";
 	private static final String THESEOS_WORKFLOW_API_PARAMETERS="?niss=${header.inss}&definition=${header.type}" +
 			"&search:sortField=lastUpdateTime&search:sortOrder";
 	private static final String THESEOS_WORKFLOW_API_URI = "http4://{{theseos.host}}:{{theseos.port}}/" +
 			"{{theseos.workflow.api.url}}";
 	private static final String XSD_VALIDATION_URI = "validator:be/fgov/sfpd/integration/documents/Document.xsd";
-	private static final String INPUT_URI = "{{route.documents.input.uri}}?include=.*\\.xml&move=success&moveFailed=error";
+	private static final String INPUT_URI = "{{route.documents.input.uri}}?include=.*\\.xml"
+			+ "&readLock=changed&readLockMinAge=10s&readLockTimeout=30000&move=success&moveFailed=error";
 
 
 	@Override
