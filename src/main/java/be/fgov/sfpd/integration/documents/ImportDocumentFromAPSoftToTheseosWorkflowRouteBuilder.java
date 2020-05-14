@@ -43,14 +43,14 @@ public class ImportDocumentFromAPSoftToTheseosWorkflowRouteBuilder extends Route
 	private static final String HEADER_UPLOAD_URI = "${header.upload}";
 
 	private static final String CAMEL_DOCUMENTS_INPUT_URI = "{{route.documents.input.uri}}?fileName=${header.file}"
-			+ "&readLock=changed&readLockMinAge=10s&readLockTimeout=30000&move=success";
+			+ "&readLock=changed&readLockMinAge=3s&readLockTimeout=10000&move=success";
 	private static final String THESEOS_WORKFLOW_API_PARAMETERS="?niss=${header.inss}&definition=${header.type}" +
 			"&search:sortField=lastUpdateTime&search:sortOrder";
 	private static final String THESEOS_WORKFLOW_API_URI = "http4://{{theseos.host}}:{{theseos.port}}/" +
 			"{{theseos.workflow.api.url}}";
 	private static final String XSD_VALIDATION_URI = "validator:be/fgov/sfpd/integration/documents/Document.xsd";
 	private static final String INPUT_URI = "{{route.documents.input.uri}}?include=.*\\.xml"
-			+ "&readLock=changed&readLockMinAge=10s&readLockTimeout=30000&move=success&moveFailed=error";
+			+ "&readLock=changed&readLockMinAge=6s&readLockTimeout=10000&move=success&moveFailed=error";
 
 
 	@Override
@@ -66,7 +66,8 @@ public class ImportDocumentFromAPSoftToTheseosWorkflowRouteBuilder extends Route
 				.log("Some error occurred while processing file ${header.CamelFileName}")
 				.process(movePdfToErrorFolder());
 		onException(PredicateValidationException.class)
-				.log("Some error occurred while uploading pdf file. Original xml was: ${header.CamelFileName}");
+				.log("Some error occurred while uploading pdf file. Original xml was: ${header.CamelFileName}")
+				.process(movePdfToErrorFolder());
 
 		from(INPUT_URI)
 				.log("Processing file ${header.CamelFileName}")
@@ -104,6 +105,7 @@ public class ImportDocumentFromAPSoftToTheseosWorkflowRouteBuilder extends Route
 				.process(e -> setTimeOutInHeader(e,"upload", "60000"))
 				.log("upload document to ${header.upload}")
 				.pollEnrich().simple(CAMEL_DOCUMENTS_INPUT_URI)
+				.timeout(30000)
 				.aggregationStrategy(this::aggregate)
 				.log("Processing file ${header.CamelFileName}")
 				.process(prepareForHttpPostRequest())
@@ -182,6 +184,10 @@ public class ImportDocumentFromAPSoftToTheseosWorkflowRouteBuilder extends Route
 	}
 
 	private Exchange aggregate(Exchange voucher, Exchange payload) {
+		if (payload == null) { //means timeout happens on pollEnrich
+			log.error("PDF file is not presented for {}", voucher.getIn().getHeader(Exchange.FILE_PATH));
+			throw new IllegalArgumentException("PDF file is not presented");
+		}
 		final ContentType contentType = ContentType.create(voucher.getIn().getHeader("mime", String.class));
 		final HttpEntity resultEntity = MultipartEntityBuilder
 				.create()
