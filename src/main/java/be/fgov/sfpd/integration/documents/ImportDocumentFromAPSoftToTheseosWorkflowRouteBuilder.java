@@ -17,7 +17,6 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.cdi.ContextName;
 import org.apache.camel.processor.validation.PredicateValidationException;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -212,10 +211,15 @@ public class ImportDocumentFromAPSoftToTheseosWorkflowRouteBuilder extends Route
 		return (exchange) -> {
 			String parent = (String) exchange.getIn().getHeader(Exchange.FILE_PARENT);
 
-			String filename = (String) exchange.getIn().getHeader(Exchange.FILE_PATH);
-			String baseName = FilenameUtils.getBaseName(filename);
+			//in case of error on the xml parsing this header does not present
+			//but we cannot touch pdf files without knowing exactly that the file should be moved to the error location
+			String filename = (String) exchange.getIn().getHeader("file");
+			if (filename == null) {
+				log.info("No pdf name provided");
+				return;
+			}
 
-			Path source = Paths.get(parent, baseName + ".pdf");
+			Path source = Paths.get(parent, filename);
 			log.info("computed pdf source = {}", source);
 			if (Files.exists(source)) {
 				Path dest = Paths.get(parent, "error");
