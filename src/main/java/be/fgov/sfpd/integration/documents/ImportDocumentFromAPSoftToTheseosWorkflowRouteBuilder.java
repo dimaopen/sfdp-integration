@@ -17,6 +17,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.builder.xml.Namespaces;
 import org.apache.camel.cdi.ContextName;
 import org.apache.camel.processor.validation.PredicateValidationException;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
@@ -212,28 +213,35 @@ public class ImportDocumentFromAPSoftToTheseosWorkflowRouteBuilder extends Route
 			String parent = (String) exchange.getIn().getHeader(Exchange.FILE_PARENT);
 
 			//in case of error on the xml parsing this header does not present
-			//but we cannot touch pdf files without knowing exactly that the file should be moved to the error location
+			//todo can we touch pdf files without knowing exactly that the file should be moved to the error location?
 			String filename = (String) exchange.getIn().getHeader("file");
 			if (filename == null) {
-				log.info("No pdf name provided");
-				return;
+				log.info("No pdf name provided. Using the xml base file name.");
+				String xmlFileName = (String) exchange.getIn().getHeader(Exchange.FILE_NAME);
+				if (xmlFileName == null) {
+					log.info("No xml name provided.");
+					return;
+				}
+				filename = FilenameUtils.removeExtension(xmlFileName) + ".pdf";
 			}
 
 			Path source = Paths.get(parent, filename);
 			log.info("computed pdf source = {}", source);
-			if (Files.exists(source)) {
-				Path dest = Paths.get(parent, "error");
-				if (!Files.exists(dest)) {
-					log.info("creating dir = {}", dest);
-					Files.createDirectories(dest);
-				}
-				Path pdfDes = dest.resolve(source.getFileName());
-				log.info("pdf destination = {}", pdfDes);
-				try {
-					Files.move(source, pdfDes, StandardCopyOption.REPLACE_EXISTING);
-				} catch (Exception e) {
-					log.error("Error moving pdf file", e);
-				}
+			if (!Files.exists(source)) {
+				log.warn("No pdf file found: {}", source);
+				return;
+			}
+			Path dest = Paths.get(parent, "error");
+			if (!Files.exists(dest)) {
+				log.info("creating dir = {}", dest);
+				Files.createDirectories(dest);
+			}
+			Path pdfDes = dest.resolve(source.getFileName());
+			log.info("pdf destination = {}", pdfDes);
+			try {
+				Files.move(source, pdfDes, StandardCopyOption.REPLACE_EXISTING);
+			} catch (Exception e) {
+				log.error("Error moving pdf file", e);
 			}
 		};
 	}
