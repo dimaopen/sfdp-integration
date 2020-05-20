@@ -17,9 +17,10 @@
         }
       },
       "_forms": {
-        "uploadDocument": {
+        "execute": {
           "_links": {
             "target": {
+              "name": "uploadDocumentWithoutTranslation",
               "href": "http://localhost:8089/api/workflows/2?transition=uploadDocument"
             }
           },

@@ -53,9 +53,6 @@
     ]
   },
   "response": {
-    "status": 302,
-    "headers": {
-      "Location": "http://localhost:8089/api/workflows/2"
-    }
+    "status": 200
   }
 }
